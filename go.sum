@@ -1,0 +1,6 @@
+github.com/3scale/3scale-porta-go-client v0.0.3 h1:/jcEnBQqBDuJYQKvvmKUw6c4LoF4PWq57EAD4q6HiJ8=
+github.com/3scale/3scale-porta-go-client v0.0.3/go.mod h1:eXz9JDFNrbJRqJkDs39bMxO+m/L5pz51JMof3A8jQ1k=
+github.com/orcaman/concurrent-map v0.0.0-20190314100340-2693aad1ed75 h1:IV56VwUb9Ludyr7s53CMuEh4DdTnnQtEPLEgLyJ0kHI=
+github.com/orcaman/concurrent-map v0.0.0-20190314100340-2693aad1ed75/go.mod h1:Lu3tH6HLW3feq74c2GC+jIMS/K2CFcDWnWD9XkenwhI=
+github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6 h1:lNCW6THrCKBiJBpz8kbVGjC7MgdCGKwuvBgc7LoD6sw=
+github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6/go.mod h1:Lu3tH6HLW3feq74c2GC+jIMS/K2CFcDWnWD9XkenwhI=
