@@ -88,6 +88,9 @@ func (scp *ConfigCache) Get(key string) (Value, bool) {
 // Returns an error if the max number of entries in the cache has been reached
 func (scp *ConfigCache) Set(key string, v Value) error {
 	if scp.limit < 0 || scp.cache.Count() < scp.limit {
+		if v.expires.IsZero() {
+			v.expires = scp.getExpiryTime()
+		}
 		scp.cache.Set(key, v)
 		return nil
 	}
