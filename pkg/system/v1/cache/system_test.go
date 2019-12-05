@@ -73,7 +73,8 @@ func TestConfigCache_FlushExpired(t *testing.T) {
 	cc := NewDefaultConfigCache()
 
 	yesterday := time.Hour * -24
-	v := Value{Item: client.ProxyConfig{ID: 5}}.SetExpiry(time.Now().Add(yesterday))
+	v := Value{Item: client.ProxyConfig{ID: 5}}
+	v.SetExpiry(time.Now().Add(yesterday))
 
 	cc.Set("test", v)
 	if cc.cache.Count() != 1 {
@@ -93,7 +94,9 @@ func TestConfigCache_Refresh(t *testing.T) {
 	refreshCb := func() (client.ProxyConfig, error) {
 		return client.ProxyConfig{}, http.ErrHandlerTimeout
 	}
-	v := Value{Item: client.ProxyConfig{ID: 5}}.SetRefreshCallback(refreshCb)
+	v := Value{Item: client.ProxyConfig{ID: 5}}
+	v.SetRefreshCallback(refreshCb)
+
 	cc.Set("test", v)
 	cc.Refresh()
 	updatedV, ok := cc.Get("test")
@@ -108,7 +111,8 @@ func TestConfigCache_Refresh(t *testing.T) {
 	refreshCb = func() (client.ProxyConfig, error) {
 		return client.ProxyConfig{ID: 6}, nil
 	}
-	v = Value{Item: client.ProxyConfig{ID: 5}}.SetRefreshCallback(refreshCb)
+	v = Value{Item: client.ProxyConfig{ID: 5}}
+	v.SetRefreshCallback(refreshCb)
 
 	cc.Set("test", v)
 	cc.Refresh()
@@ -136,7 +140,8 @@ func TestConfigCache_RunRefreshWorker(t *testing.T) {
 		return client.ProxyConfig{ID: 0}, nil
 	}
 
-	v := Value{}.SetRefreshCallback(refreshCb)
+	v := Value{}
+	v.SetRefreshCallback(refreshCb)
 	cc.Set("test", v)
 	stop := make(chan struct{})
 	if err := cc.RunRefreshWorker(time.Millisecond, stop); err != nil {
