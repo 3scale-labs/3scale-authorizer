@@ -29,7 +29,7 @@ type ConfigurationCache interface {
 	// Get retrieves an element from the cache (if present) and returns a result, as well as a boolean value
 	// which identifies if the element was present or not
 	Get(key string) (Value, bool)
-	Set(key string, value Value)
+	Set(key string, value Value) error
 	Delete(key string)
 	FlushExpired()
 	Refresh()
