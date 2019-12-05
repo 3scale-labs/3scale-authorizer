@@ -173,14 +173,14 @@ func (scp *ConfigCache) getExpiryTime() time.Time {
 }
 
 // SetExpiry time on a value to override the default expiry time set by the caching implementation
-func (v Value) SetExpiry(t time.Time) Value {
+func (v *Value) SetExpiry(t time.Time) *Value {
 	v.expires = t
 	return v
 }
 
 // SetRefreshCallback, the callback that will be used to attempt to refresh an element when requested
 // Retry and backoff logic should be implemented in the callback as required.
-func (v Value) SetRefreshCallback(fn RefreshCb) Value {
+func (v *Value) SetRefreshCallback(fn RefreshCb) *Value {
 	v.refreshWith = fn
 	return v
 }
