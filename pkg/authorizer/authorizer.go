@@ -12,12 +12,6 @@ import (
 	"github.com/3scale/3scale-porta-go-client/client"
 )
 
-// Authorizer fetches configuration from 3scale and authorizes requests to 3scale
-type Authorizer interface {
-	GetSystemConfiguration(systemURL string, request SystemRequest) (client.ProxyConfig, error)
-	AuthRep(backendURL string, request BackendRequest) (*BackendResponse, error)
-}
-
 // Manager manages connections and interactions between the adapter and 3scale (system and backend)
 // Supports managing interactions between multiple hosts and can optionally leverage available caching implementations
 // Capable of Authorizing a request to 3scale and providing the required functionality to pull from the sources to do so
