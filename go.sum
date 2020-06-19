@@ -4,3 +4,5 @@ github.com/3scale/3scale-porta-go-client v0.0.4-0.20200617082049-6c84693ca4c0 h1
 github.com/3scale/3scale-porta-go-client v0.0.4-0.20200617082049-6c84693ca4c0/go.mod h1:nUbuVh0fU2rs/lJfowmS5YhEk2tQoybL4htDIdxxMaM=
 github.com/orcaman/concurrent-map v0.0.0-20190314100340-2693aad1ed75 h1:IV56VwUb9Ludyr7s53CMuEh4DdTnnQtEPLEgLyJ0kHI=
 github.com/orcaman/concurrent-map v0.0.0-20190314100340-2693aad1ed75/go.mod h1:Lu3tH6HLW3feq74c2GC+jIMS/K2CFcDWnWD9XkenwhI=
+gopkg.in/oleiade/lane.v1 v1.0.0 h1:Xs7/GTdnZNGuuXV7z8gTrHoHEeHdCnhuNXm4n0UpxjY=
+gopkg.in/oleiade/lane.v1 v1.0.0/go.mod h1:e9mCiNjxfTGlkjxn/TPK3JUwhjKjby5cjXuGotH/QlE=
