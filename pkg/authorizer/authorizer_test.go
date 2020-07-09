@@ -201,8 +201,8 @@ func TestManager_GetSystemConfiguration(t *testing.T) {
 	for _, input := range inputs {
 		t.Run(input.name, func(t *testing.T) {
 			m := Manager{
-				clientBuilder: input.builder,
-				systemCache:   &input.cache,
+				clientBuilder:   input.builder,
+				systemCache:     &input.cache,
 				metricsReporter: &MetricsReporter{},
 			}
 

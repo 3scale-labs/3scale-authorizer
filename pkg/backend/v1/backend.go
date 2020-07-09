@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/3scale/3scale-authorizer/pkg/core"
 	"github.com/3scale/3scale-go-client/threescale"
 	"github.com/3scale/3scale-go-client/threescale/api"
 	http2 "github.com/3scale/3scale-go-client/threescale/http"
@@ -15,13 +16,6 @@ import (
 // RejectionReasonHeader - This is used by authorization endpoints to provide a header that provides an error code
 // describing the different reasons an authorization can be denied.
 const RejectionReasonHeaderExtension = "rejection_reason_header"
-
-// Logger allows providing a custom logging solution
-type Logger interface {
-	Infof(string, ...interface{})
-	Errorf(string, ...interface{})
-	Debugf(string, ...interface{})
-}
 
 // Backend defines the connection to a single backend and maintains a cache
 // for multiple services and applications per backend. It implements the 3scale Client interface
@@ -32,8 +26,9 @@ type Backend struct {
 	// queue must not be nil
 	queue *dequeue
 	// policy defaults to deny if not set
-	policy FailurePolicy
-	logger Logger
+	policy           FailurePolicy
+	logger           core.Logger
+	cacheHitCallback func()
 }
 
 // Application defined under a 3scale service
@@ -64,7 +59,7 @@ type UnlimitedCounter map[string]int
 type FailurePolicy func() bool
 
 // NewBackend returns a cached backend which uses an in-memory cache
-func NewBackend(url string, client *http.Client, logger Logger) (*Backend, error) {
+func NewBackend(url string, client *http.Client, logger core.Logger, policy FailurePolicy) (*Backend, error) {
 	if client == nil {
 		client = &http.Client{
 			Timeout: time.Second * 10,
@@ -72,7 +67,11 @@ func NewBackend(url string, client *http.Client, logger Logger) (*Backend, error
 	}
 
 	if logger == nil {
-		logger = &noOpLogger{}
+		logger = &core.NoOpLogger{}
+	}
+
+	if policy == nil {
+		policy = FailClosedPolicy
 	}
 
 	threescaleHttpClient, err := http2.NewClient(url, client)
@@ -80,10 +79,17 @@ func NewBackend(url string, client *http.Client, logger Logger) (*Backend, error
 		return nil, err
 	}
 	return &Backend{
-		client: threescaleHttpClient,
-		cache:  NewLocalCache(),
-		queue:  newQueue(100),
+		client:           threescaleHttpClient,
+		cache:            NewLocalCache(),
+		queue:            newQueue(100),
+		policy:           policy,
+		cacheHitCallback: func() {},
 	}, nil
+}
+
+// SetCacheHitCallback
+func (b *Backend) SetCacheHitCallback(f func()) {
+	b.cacheHitCallback = f
 }
 
 // Authorize authorizes a request based on the current cached values
@@ -255,9 +261,8 @@ func (b *Backend) report(request threescale.Request) (*threescale.ReportResult, 
 			// have a match. if not, we can report locally regardless once we know the hierarchy
 			cacheKey := generateCacheKeyFromRequest(request, index)
 
-			app, ok := b.cache.Get(cacheKey)
-			if !ok {
-				// if we missed, configure a blank app
+			app := b.getApplicationFromCache(cacheKey)
+			if app == nil {
 				app = newApplication()
 			}
 
@@ -288,6 +293,10 @@ func (b *Backend) getApplicationFromCache(key string) *Application {
 	app, ok := b.cache.Get(key)
 	if !ok {
 		app = nil
+	} else {
+		if b.cacheHitCallback != nil {
+			b.cacheHitCallback()
+		}
 	}
 	return app
 }
@@ -307,7 +316,10 @@ func (b *Backend) localReport(cacheKey string, metrics api.Metrics) {
 	// we have failed to fetch and build an application and populate the cache with it
 	// that is, since the Set func on the cache currently does not return an error then this is ok
 	// if we end up supporting external caches and the write can fail then this may need updating.
-	application, _ := b.cache.Get(cacheKey)
+	application := b.getApplicationFromCache(cacheKey)
+	if application == nil {
+		return
+	}
 
 	application.Lock()
 	defer application.Unlock()
@@ -815,11 +827,3 @@ func FailOpenPolicy() bool {
 func FailClosedPolicy() bool {
 	return false
 }
-
-type noOpLogger struct{}
-
-func (l *noOpLogger) Infof(s string, i ...interface{}) {}
-
-func (l *noOpLogger) Errorf(s string, i ...interface{}) {}
-
-func (l *noOpLogger) Debugf(s string, i ...interface{}) {}

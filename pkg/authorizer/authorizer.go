@@ -178,7 +178,7 @@ func (m Manager) GetSystemConfiguration(systemURL string, request SystemRequest)
 		return config, err
 	}
 
-	if m.systemCache != nil && m.systemCache.ConfigurationCache != nil{
+	if m.systemCache != nil && m.systemCache.ConfigurationCache != nil {
 		config, err = m.fetchSystemConfigFromCache(systemURL, request)
 
 	} else {

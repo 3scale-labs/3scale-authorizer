@@ -3,6 +3,7 @@ package backend
 import (
 	"errors"
 	"fmt"
+	"github.com/3scale/3scale-authorizer/pkg/core"
 	"net"
 	"path/filepath"
 	"reflect"
@@ -1598,7 +1599,7 @@ func TestBackend_Flush(t *testing.T) {
 				client: test.remoteClient,
 				cache:  cache,
 				queue:  newQueue(10),
-				logger: &noOpLogger{},
+				logger: &core.NoOpLogger{},
 			}
 
 			b.Flush()

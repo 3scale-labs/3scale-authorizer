@@ -1,9 +1,9 @@
 package core
 
 type Logger interface {
-        Infof(string, ...interface{})
-        Errorf(string, ...interface{})
-        Debugf(string, ...interface{})
+	Infof(string, ...interface{})
+	Errorf(string, ...interface{})
+	Debugf(string, ...interface{})
 }
 
 // NoOpLogger logs nothing
