@@ -17,7 +17,7 @@ import (
 // Capable of Authorizing a request to 3scale and providing the required functionality to pull from the sources to do so
 type Manager struct {
 	clientBuilder  Builder
-	systemCache    SystemCache
+	systemCache    *SystemCache
 	backendConf    BackendConfig
 	cachedBackends map[string]cachedBackend
 	// stopFlush controls the background process that periodically flushes the cache
@@ -26,8 +26,8 @@ type Manager struct {
 
 // SystemCache wraps the caching implementation and its configuration for 3scale system
 type SystemCache struct {
+	cache.ConfigurationCache
 	SystemCacheConfig
-	cache              cache.ConfigurationCache
 	stopRefreshingTask chan struct{}
 }
 
@@ -103,13 +103,13 @@ func NewManager(builder Builder, systemCache *SystemCache, backendConfig Backend
 		return nil, fmt.Errorf("manager requires a valid builder")
 	}
 
-	if systemCache.cache != nil {
+	if systemCache != nil {
 		go func() {
 			ticker := time.NewTicker(systemCache.RefreshInterval)
 			for {
 				select {
 				case <-ticker.C:
-					systemCache.cache.Refresh()
+					systemCache.Refresh()
 				case <-systemCache.stopRefreshingTask:
 					ticker.Stop()
 					return
@@ -121,7 +121,7 @@ func NewManager(builder Builder, systemCache *SystemCache, backendConfig Backend
 
 	m := &Manager{
 		clientBuilder: builder,
-		systemCache:   *systemCache,
+		systemCache:   systemCache,
 		backendConf:   backendConfig,
 		stopFlush:     make(chan struct{}),
 	}
@@ -147,7 +147,7 @@ func NewSystemCache(config SystemCacheConfig, stopRefreshing chan struct{}) *Sys
 	}
 
 	return &SystemCache{
-		cache:              c,
+		ConfigurationCache: c,
 		stopRefreshingTask: stopRefreshing,
 		SystemCacheConfig:  config,
 	}
@@ -162,7 +162,7 @@ func (m Manager) GetSystemConfiguration(systemURL string, request SystemRequest)
 		return config, err
 	}
 
-	if m.systemCache.cache != nil {
+	if m.systemCache != nil {
 		config, err = m.fetchSystemConfigFromCache(systemURL, request)
 
 	} else {
@@ -275,7 +275,7 @@ func (m Manager) fetchSystemConfigFromCache(systemURL string, request SystemRequ
 	var err error
 
 	cacheKey := generateSystemCacheKey(systemURL, request.ServiceID)
-	cachedValue, found := m.systemCache.cache.Get(cacheKey)
+	cachedValue, found := m.systemCache.Get(cacheKey)
 	if !found {
 		config, err = m.fetchSystemConfigRemotely(systemURL, request)
 		if err != nil {
@@ -284,7 +284,7 @@ func (m Manager) fetchSystemConfigFromCache(systemURL string, request SystemRequ
 
 		itemToCache := &cache.Value{Item: config}
 		itemToCache = m.setValueFromConfig(systemURL, request, itemToCache)
-		m.systemCache.cache.Set(cacheKey, *itemToCache)
+		m.systemCache.Set(cacheKey, *itemToCache)
 
 	} else {
 		config = cachedValue.Item

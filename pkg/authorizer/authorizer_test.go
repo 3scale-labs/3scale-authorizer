@@ -92,7 +92,7 @@ func TestManager_GetSystemConfiguration(t *testing.T) {
 			request: validRequest,
 			builder: newMockBuilderWithSystemClientBuildError(t),
 			cache: SystemCache{
-				cache: cache.NewDefaultConfigCache(),
+				ConfigurationCache: cache.NewDefaultConfigCache(),
 			},
 			expectErr: true,
 		},
@@ -119,7 +119,7 @@ func TestManager_GetSystemConfiguration(t *testing.T) {
 				},
 			},
 			cache: SystemCache{
-				cache: cache.NewDefaultConfigCache(),
+				ConfigurationCache: cache.NewDefaultConfigCache(),
 			},
 			expectErr: true,
 		},
@@ -150,7 +150,7 @@ func TestManager_GetSystemConfiguration(t *testing.T) {
 				},
 			},
 			cache: SystemCache{
-				cache: cache.NewDefaultConfigCache(),
+				ConfigurationCache: cache.NewDefaultConfigCache(),
 			},
 			expectErr: false,
 			inspect: func(returnedConfig client.ProxyConfig, configurationCache cache.ConfigurationCache, t *testing.T) {
@@ -180,7 +180,7 @@ func TestManager_GetSystemConfiguration(t *testing.T) {
 				},
 			},
 			cache: SystemCache{
-				cache: cache.NewDefaultConfigCache(),
+				ConfigurationCache: cache.NewDefaultConfigCache(),
 			},
 			setup: func(configurationCache cache.ConfigurationCache) {
 
@@ -209,11 +209,11 @@ func TestManager_GetSystemConfiguration(t *testing.T) {
 		t.Run(input.name, func(t *testing.T) {
 			m := Manager{
 				clientBuilder: input.builder,
-				systemCache:   input.cache,
+				systemCache:   &input.cache,
 			}
 
 			if input.setup != nil {
-				input.setup(input.cache.cache)
+				input.setup(input.cache)
 			}
 
 			config, err := m.GetSystemConfiguration(systemURL, input.request)
@@ -225,7 +225,7 @@ func TestManager_GetSystemConfiguration(t *testing.T) {
 			}
 
 			if input.inspect != nil {
-				input.inspect(config, input.cache.cache, t)
+				input.inspect(config, input.cache, t)
 			}
 
 		})
@@ -243,7 +243,7 @@ func TestManager_CacheRefreshCallback(t *testing.T) {
 	m := Manager{}
 	cacheKey := generateSystemCacheKey(systemURL, svcID)
 
-	sc := SystemCache{cache: cache.NewDefaultConfigCache()}
+	sc := SystemCache{ConfigurationCache: cache.NewDefaultConfigCache()}
 	value := cache.Value{
 		Item: client.ProxyConfig{
 			Environment: "cached",
@@ -265,11 +265,11 @@ func TestManager_CacheRefreshCallback(t *testing.T) {
 	}
 
 	value.SetRefreshCallback(refreshWith)
-	sc.cache.Set(cacheKey, value)
+	sc.Set(cacheKey, value)
 
 	// inject a builder that fails when the client should be built and expect it to error
 	m.clientBuilder = newMockBuilderWithSystemClientBuildError(t)
-	sc.cache.Refresh()
+	sc.Refresh()
 
 	if err != nil {
 		fmt.Errorf("expected an error to have been returned")
@@ -282,7 +282,7 @@ func TestManager_CacheRefreshCallback(t *testing.T) {
 			withErr: true,
 		},
 	}
-	sc.cache.Refresh()
+	sc.Refresh()
 	if err != nil {
 		fmt.Errorf("expected an error to have been returned")
 	}
@@ -294,7 +294,7 @@ func TestManager_CacheRefreshCallback(t *testing.T) {
 			withErr: false,
 		},
 	}
-	sc.cache.Refresh()
+	sc.Refresh()
 	if err == nil {
 		fmt.Errorf("unexpected error")
 	}
