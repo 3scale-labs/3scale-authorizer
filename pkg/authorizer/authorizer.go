@@ -115,7 +115,7 @@ func NewManager(
 	}
 
 	if reporter.ReportMetrics && reporter.ResponseCB != nil {
-		builder.httpClient.Transport = &MetricsTransport{}
+		builder.httpClient.Transport = &MetricsTransport{client: builder.httpClient}
 	}
 
 	if systemCache != nil {
