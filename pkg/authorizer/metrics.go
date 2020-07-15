@@ -34,14 +34,14 @@ type MetricsReporter struct {
 	CacheHitCB    CacheHitHook
 }
 
-type MetricsTransport struct {
-	client *http.Client
-	hook   ResponseHook
+type MetricsRoundTripper struct {
+	proxied http.RoundTripper
+	hook    ResponseHook
 }
 
-func (mt *MetricsTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (mt *MetricsRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
-	resp, err := mt.client.Transport.RoundTrip(req)
+	resp, err := mt.proxied.RoundTrip(req)
 	if err != nil {
 		return resp, err
 	}
