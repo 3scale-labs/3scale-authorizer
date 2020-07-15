@@ -279,6 +279,10 @@ func (m Manager) newCachedBackend(url string) (cachedBackend, error) {
 		return cachedBackend{}, err
 	}
 
+	backend.SetCacheHitCallback(func() {
+		m.metricsReporter.CacheHitCB(Backend)
+	})
+
 	ticker := time.NewTicker(m.backendConf.CacheFlushInterval)
 	go func() {
 		for {
