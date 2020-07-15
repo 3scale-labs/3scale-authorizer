@@ -271,7 +271,7 @@ func (m Manager) authRep(client threescale.Client, request BackendRequest) (*Bac
 // newCachedBackend creates a new backend and start the flushing process in the background
 func (m Manager) newCachedBackend(url string) (cachedBackend, error) {
 	httpClient := http.DefaultClient
-	if cb, ok := m.clientBuilder.(*ClientBuilder); ok {
+	if cb, ok := m.clientBuilder.(ClientBuilder); ok {
 		httpClient = cb.httpClient
 	}
 	backend, err := backend.NewBackend(url, httpClient, m.backendConf.Logger, m.backendConf.Policy)
