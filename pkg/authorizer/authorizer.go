@@ -108,14 +108,18 @@ func NewManager(
 	reporter *MetricsReporter,
 ) *Manager {
 
-	builder := ClientBuilder{httpClient: http.DefaultClient}
+	baseTransport := client.Transport.(*http.Transport).Clone()
+	builder := ClientBuilder{httpClient: client}
 
 	if reporter == nil {
 		reporter = &MetricsReporter{}
 	}
 
 	if reporter.ReportMetrics && reporter.ResponseCB != nil {
-		builder.httpClient.Transport = &MetricsTransport{client: builder.httpClient}
+		builder.httpClient.Transport = &MetricsRoundTripper{
+			proxied: baseTransport,
+			hook: reporter.ResponseCB,
+		}
 	}
 
 	if systemCache != nil {
