@@ -107,18 +107,23 @@ func NewManager(
 	backendConfig BackendConfig,
 	reporter *MetricsReporter,
 ) *Manager {
-
-	baseTransport := client.Transport.(*http.Transport).Clone()
 	builder := ClientBuilder{httpClient: client}
+
+	if client.Transport == nil {
+		client.Transport = http.DefaultTransport
+	}
 
 	if reporter == nil {
 		reporter = &MetricsReporter{}
 	}
 
-	if reporter.ReportMetrics && reporter.ResponseCB != nil {
-		builder.httpClient.Transport = &MetricsRoundTripper{
-			proxied: baseTransport,
-			hook: reporter.ResponseCB,
+	baseTransport, ok := client.Transport.(*http.Transport)
+	if ok {
+		if reporter.ReportMetrics && reporter.ResponseCB != nil {
+			builder.httpClient.Transport = &MetricsRoundTripper{
+				proxied: baseTransport,
+				hook: reporter.ResponseCB,
+			}
 		}
 	}
 
@@ -266,13 +271,17 @@ func (m Manager) authRep(client threescale.Client, request BackendRequest) (*Bac
 // newCachedBackend creates a new backend and start the flushing process in the background
 func (m Manager) newCachedBackend(url string) (cachedBackend, error) {
 	httpClient := http.DefaultClient
-	if cb, ok := m.clientBuilder.(*ClientBuilder); ok {
+	if cb, ok := m.clientBuilder.(ClientBuilder); ok {
 		httpClient = cb.httpClient
 	}
 	backend, err := backend.NewBackend(url, httpClient, m.backendConf.Logger, m.backendConf.Policy)
 	if err != nil {
 		return cachedBackend{}, err
 	}
+
+	backend.SetCacheHitCallback(func() {
+		m.metricsReporter.CacheHitCB(Backend)
+	})
 
 	ticker := time.NewTicker(m.backendConf.CacheFlushInterval)
 	go func() {
