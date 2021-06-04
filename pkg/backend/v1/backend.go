@@ -97,10 +97,14 @@ func (b *Backend) SetCacheHitCallback(f func()) {
 // Request Transactions must not be nil and must not be empty
 // If multiple transactions are provided, all but the first is discarded
 func (b *Backend) Authorize(request threescale.Request) (*threescale.AuthorizeResult, error) {
-	return b.authorize(request)
+	return b.authorize(request, false)
 }
 
-func (b *Backend) authorize(request threescale.Request) (*threescale.AuthorizeResult, error) {
+func (b *Backend) OauthAuthorize(request threescale.Request) (*threescale.AuthorizeResult, error) {
+	return b.authorize(request, true)
+}
+
+func (b *Backend) authorize(request threescale.Request, oidc bool) (*threescale.AuthorizeResult, error) {
 	var err error
 
 	err = validateTransactions(request.Transactions)
@@ -113,7 +117,7 @@ func (b *Backend) authorize(request threescale.Request) (*threescale.AuthorizeRe
 
 	if app == nil {
 		var upstreamResponse *threescale.AuthorizeResult
-		app, upstreamResponse, err = b.handleCacheMiss(request, cacheKey)
+		app, upstreamResponse, err = b.handleCacheMiss(request, cacheKey, oidc)
 		if err != nil {
 			return b.handleAuthorizationNetworkError(err)
 		}
@@ -139,10 +143,14 @@ func (b *Backend) authorize(request threescale.Request) (*threescale.AuthorizeRe
 // Request Transactions must not be nil and must not be empty
 // If multiple transactions are provided, all but the first are discarded
 func (b *Backend) AuthRep(request threescale.Request) (*threescale.AuthorizeResult, error) {
-	return b.authRep(request)
+	return b.authRep(request, false)
 }
 
-func (b *Backend) authRep(request threescale.Request) (*threescale.AuthorizeResult, error) {
+func (b *Backend) OauthAuthRep(request threescale.Request) (*threescale.AuthorizeResult, error) {
+	return b.authRep(request, true)
+}
+
+func (b *Backend) authRep(request threescale.Request, oidc bool) (*threescale.AuthorizeResult, error) {
 	var err error
 
 	err = validateTransactions(request.Transactions)
@@ -155,7 +163,7 @@ func (b *Backend) authRep(request threescale.Request) (*threescale.AuthorizeResu
 
 	if app == nil {
 		var upstreamResponse *threescale.AuthorizeResult
-		app, upstreamResponse, err = b.handleCacheMiss(request, cacheKey)
+		app, upstreamResponse, err = b.handleCacheMiss(request, cacheKey, oidc)
 		if err != nil {
 			return b.handleAuthorizationNetworkError(err)
 		}
@@ -190,13 +198,13 @@ func (b *Backend) handleAuthorizationNetworkError(err error) (*threescale.Author
 // handleCacheMiss attempts to call remote 3scale with a blank request and the
 // required extensions enabled to learn current state for caching purposes.
 // Sets the value in the cache and returns the newly cached value for re-use if required
-func (b *Backend) handleCacheMiss(request threescale.Request, cacheKey string) (*Application, *threescale.AuthorizeResult, error) {
+func (b *Backend) handleCacheMiss(request threescale.Request, cacheKey string, oidc bool) (*Application, *threescale.AuthorizeResult, error) {
 	var app Application
 
 	emptyTransaction := emptyTransactionFrom(request.Transactions[0])
 	emptyRequest := getEmptyAuthRequest(request.Service, request.Auth, emptyTransaction.Params)
 
-	resp, err := b.remoteAuth(emptyRequest)
+	resp, err := b.remoteAuth(emptyRequest, oidc)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -271,7 +279,7 @@ func (b *Backend) report(request threescale.Request) (*threescale.ReportResult, 
 					// while reporting locally, we don't care about cache misses, however we do need
 					// to deal with the exception of cases where we have no hierarchy
 					// which could lead to incorrect reports
-					app, _, err = b.handleCacheMiss(request, cacheKey)
+					app, _, err = b.handleCacheMiss(request, cacheKey, false)
 					if err != nil {
 						// we can continue here and try to deal with the rest of the transactions
 						// it may fail if 3scale was down and likely a transient error
@@ -302,8 +310,12 @@ func (b *Backend) getApplicationFromCache(key string) *Application {
 }
 
 // remoteAuth calls Authorize API of the underlying client
-func (b *Backend) remoteAuth(request threescale.Request) (*threescale.AuthorizeResult, error) {
-	return b.client.Authorize(request)
+func (b *Backend) remoteAuth(request threescale.Request, oidc bool) (*threescale.AuthorizeResult, error) {
+	if oidc {
+		return b.client.OauthAuthorize(request)
+	} else {
+		return b.client.Authorize(request)
+	}
 }
 
 func (b *Backend) remoteReport(request threescale.Request) (*threescale.ReportResult, error) {
@@ -470,7 +482,9 @@ func (b *Backend) reportGroupedApps(service api.Service, apps []*Application) []
 func (b *Backend) handleFlushAuthorization(apps []*handledApp) []*handledApp {
 	for _, app := range apps {
 		req := getEmptyAuthRequest(app.snapshot.ownedBy, app.snapshot.auth, app.snapshot.params)
-		resp, err := b.remoteAuth(req)
+		// not using the OIDC endpoint (todo: perhaps we should check
+		// the service type and use it)
+		resp, err := b.remoteAuth(req, false)
 		if err != nil {
 			b.logger.Errorf(
 				"failed to fetch state for service %s and backend %s",
