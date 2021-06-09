@@ -1,6 +1,7 @@
 package authorizer
 
 import (
+	"os"
 	"fmt"
 	"net/http"
 	"time"
@@ -209,6 +210,7 @@ func (m Manager) Shutdown() {
 
 // AuthRep does a Authorize and Report request into 3scale apisonator
 func (m Manager) AuthRep(backendURL string, request BackendRequest) (*BackendResponse, error) {
+	fmt.Fprintf(os.Stderr, "\n***** [authorizer] Manager.AuthRep:\n%#v\n%#v\n\n", backendURL, request)
 	if !m.backendConf.EnableCaching {
 		return m.passthroughAuthRep(backendURL, request, false)
 	}
@@ -218,6 +220,7 @@ func (m Manager) AuthRep(backendURL string, request BackendRequest) (*BackendRes
 
 // DEPRECATED: do not use in new code
 func (m Manager) OauthAuthRep(backendURL string, request BackendRequest) (*BackendResponse, error) {
+	fmt.Fprintf(os.Stderr, "\n***** [authorizer] Manager.OauthAuthRep:\n%#v\n%#v\n\n", backendURL, request)
 	if !m.backendConf.EnableCaching {
 		return m.passthroughAuthRep(backendURL, request, true)
 	}
@@ -259,9 +262,13 @@ func (m Manager) authRep(client threescale.Client, request BackendRequest, oidc 
 
 	var res *threescale.AuthorizeResult
 
+	fmt.Fprintf(os.Stderr, "\n***** [authorizer] m.authRep:\n%#v\n%#v\nOIDC: %#v\n\n", client, request, oidc)
+
 	if oidc {
+		fmt.Fprintf(os.Stderr, "\n***** [authorizer] calling OauthAuthRep on the client\n\n")
 		res, err = client.OauthAuthRep(*req)
 	} else {
+		fmt.Fprintf(os.Stderr, "\n***** [authorizer] calling AuthRep on the client\n\n")
 		res, err = client.AuthRep(*req)
 	}
 	if err != nil {

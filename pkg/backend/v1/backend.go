@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"os"
 	"fmt"
 	"net"
 	"net/http"
@@ -101,6 +102,7 @@ func (b *Backend) Authorize(request threescale.Request) (*threescale.AuthorizeRe
 }
 
 func (b *Backend) OauthAuthorize(request threescale.Request) (*threescale.AuthorizeResult, error) {
+	fmt.Fprintf(os.Stderr, "\n***** [authorizer] Backend.OauthAuthorize:\n%#v\n\n", request)
 	return b.authorize(request, true)
 }
 
@@ -147,6 +149,7 @@ func (b *Backend) AuthRep(request threescale.Request) (*threescale.AuthorizeResu
 }
 
 func (b *Backend) OauthAuthRep(request threescale.Request) (*threescale.AuthorizeResult, error) {
+	fmt.Fprintf(os.Stderr, "\n***** [authorizer] Backend.OauthAuthRep:\n%#v\n\n", request)
 	return b.authRep(request, true)
 }
 
@@ -311,9 +314,12 @@ func (b *Backend) getApplicationFromCache(key string) *Application {
 
 // remoteAuth calls Authorize API of the underlying client
 func (b *Backend) remoteAuth(request threescale.Request, oidc bool) (*threescale.AuthorizeResult, error) {
+	fmt.Fprintf(os.Stderr, "\n***** [authorizer] Backend.remoteAuth:\n%#v\nOIDC: %#v\n\n", request, oidc)
 	if oidc {
+		fmt.Fprintf(os.Stderr, "\n***** [authorizer] Calling client OauthAuthorize\n\n")
 		return b.client.OauthAuthorize(request)
 	} else {
+		fmt.Fprintf(os.Stderr, "\n***** [authorizer] Calling client Authorize\n\n")
 		return b.client.Authorize(request)
 	}
 }
