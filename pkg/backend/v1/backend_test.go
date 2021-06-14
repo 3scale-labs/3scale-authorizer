@@ -1701,8 +1701,16 @@ func (mc *mockRemoteClient) Authorize(request threescale.Request) (*threescale.A
 	return mc.authRes, mc.err
 }
 
+func (mc *mockRemoteClient) OauthAuthorize(request threescale.Request) (*threescale.AuthorizeResult, error) {
+	return mc.Authorize(request)
+}
+
 func (mc *mockRemoteClient) AuthRep(request threescale.Request) (*threescale.AuthorizeResult, error) {
 	return mc.authRes, mc.err
+}
+
+func (mc *mockRemoteClient) OauthAuthRep(request threescale.Request) (*threescale.AuthorizeResult, error) {
+	return mc.AuthRep(request)
 }
 
 func (mc *mockRemoteClient) Report(request threescale.Request) (*threescale.ReportResult, error) {

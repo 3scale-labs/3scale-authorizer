@@ -210,22 +210,31 @@ func (m Manager) Shutdown() {
 // AuthRep does a Authorize and Report request into 3scale apisonator
 func (m Manager) AuthRep(backendURL string, request BackendRequest) (*BackendResponse, error) {
 	if !m.backendConf.EnableCaching {
-		return m.passthroughAuthRep(backendURL, request)
+		return m.passthroughAuthRep(backendURL, request, false)
 	}
 
-	return m.cachedAuthRep(backendURL, request)
+	return m.cachedAuthRep(backendURL, request, false)
 }
 
-func (m Manager) passthroughAuthRep(backendURL string, request BackendRequest) (*BackendResponse, error) {
+// DEPRECATED: do not use in new code
+func (m Manager) OauthAuthRep(backendURL string, request BackendRequest) (*BackendResponse, error) {
+	if !m.backendConf.EnableCaching {
+		return m.passthroughAuthRep(backendURL, request, true)
+	}
+
+	return m.cachedAuthRep(backendURL, request, true)
+}
+
+func (m Manager) passthroughAuthRep(backendURL string, request BackendRequest, oidc bool) (*BackendResponse, error) {
 	client, err := m.clientBuilder.BuildBackendClient(backendURL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to build required client for 3scale backend - %s", err.Error())
 	}
 
-	return m.authRep(client, request)
+	return m.authRep(client, request, oidc)
 }
 
-func (m Manager) cachedAuthRep(backendURL string, request BackendRequest) (*BackendResponse, error) {
+func (m Manager) cachedAuthRep(backendURL string, request BackendRequest, oidc bool) (*BackendResponse, error) {
 	var cb cachedBackend
 	var err error
 	cb, knownBackend := m.cachedBackends[backendURL]
@@ -234,21 +243,27 @@ func (m Manager) cachedAuthRep(backendURL string, request BackendRequest) (*Back
 		cb, err = m.newCachedBackend(backendURL)
 		if err != nil {
 			//todo(pgough) - add logging when we accept a logger
-			return m.passthroughAuthRep(backendURL, request)
+			return m.passthroughAuthRep(backendURL, request, oidc)
 		}
 		m.cachedBackends[backendURL] = cb
 	}
 
-	return m.authRep(cb.backend, request)
+	return m.authRep(cb.backend, request, oidc)
 }
 
-func (m Manager) authRep(client threescale.Client, request BackendRequest) (*BackendResponse, error) {
+func (m Manager) authRep(client threescale.Client, request BackendRequest, oidc bool) (*BackendResponse, error) {
 	req, err := request.ToAPIRequest()
 	if err != nil {
 		return nil, fmt.Errorf("unable to build request to 3scale - %s", err)
 	}
 
-	res, err := client.AuthRep(*req)
+	var res *threescale.AuthorizeResult
+
+	if oidc {
+		res, err = client.OauthAuthRep(*req)
+	} else {
+		res, err = client.AuthRep(*req)
+	}
 	if err != nil {
 		var rawResponse interface{}
 		if res != nil {

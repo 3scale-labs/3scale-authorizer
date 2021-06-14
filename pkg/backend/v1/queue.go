@@ -1,7 +1,7 @@
 package backend
 
 import (
-	"gopkg.in/oleiade/lane.v1"
+	"github.com/oleiade/lane"
 )
 
 // dequeue is a head-tail linked list data structure provided for working with Application(s)
