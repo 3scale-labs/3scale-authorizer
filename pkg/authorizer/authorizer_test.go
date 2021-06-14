@@ -558,11 +558,19 @@ func (mbc mockBackendClient) Authorize(request threescale.Request) (*threescale.
 	panic("implement me")
 }
 
+func (mbc mockBackendClient) OauthAuthorize(request threescale.Request) (*threescale.AuthorizeResult, error) {
+	panic("implement me")
+}
+
 func (mbc mockBackendClient) AuthRep(request threescale.Request) (*threescale.AuthorizeResult, error) {
 	if mbc.withAuthRepErr {
 		return nil, fmt.Errorf("arbitrary error")
 	}
 	return mbc.withAuthResponse, nil
+}
+
+func (mbc mockBackendClient) OauthAuthRep(request threescale.Request) (*threescale.AuthorizeResult, error) {
+	return mbc.AuthRep(request)
 }
 
 func (mockBackendClient) Report(request threescale.Request) (*threescale.ReportResult, error) {
